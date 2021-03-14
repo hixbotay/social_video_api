@@ -1,0 +1,95 @@
+<?php
+namespace App\Http\Controllers\API;
+use App\Http\Controllers\Controller;
+use Illuminate\Http\Request;
+use App\Models\User;
+use Carbon\Carbon;
+use Illuminate\Support\Facades\Storage;
+use MikeMcLin\WpPassword\Facades\WpPassword;
+class WordPressAuthController extends Controller
+{
+    public function getCurrentuser(Request $request){
+        $user = $request->user();
+        $user->number_friend = 10;
+        $user->number_follow = 15;
+        $user->avatar = 'https://scontent.fhan5-2.fna.fbcdn.net/v/t1.0-0/s180x540/15781738_1240652895996367_1958146021700446211_n.jpg?_nc_cat=102&ccb=1-3&_nc_sid=9267fe&_nc_ohc=weza5MDyFL8AX83VlTg&_nc_ht=scontent.fhan5-2.fna&tp=7&oh=6d3c8c48278585eb32b467f5ab2a6e55&oe=6072829A';
+        return response([ 'user' => $user]);
+    }
+
+    public function register(Request $request)
+    {
+        try{
+            $validatedData = $request->validate([
+                'user_nicename' => 'required|max:200',
+                'user_email' => 'email|required|unique:wp_users',
+                'user_password' => 'required',
+                'user_login' => 'required|unique:wp_users'
+            ]);
+        }
+        catch(\Exception $e){
+            return response([ 'msg' => $e->getMessage()],400);
+        }
+       $validatedData['display_name'] = $validatedData['user_nicename'];
+       $validatedData['user_registered'] = Carbon::now()->toDateTimeString();
+        $validatedData['user_password'] = WpPassword::make($validatedData['user_password']);
+        $user = User::create($validatedData);
+        $accessToken = $user->createToken('authToken')->plainTextToken;
+        return response([ 'user' => $user, 'access_token' => $accessToken]);
+    }
+
+    public function login(Request $request)
+    {
+        $loginData = $request->validate([
+            'email' => 'email|required',
+            'password' => 'required'
+        ]);
+        $user = User::where('user_email', $request->email)->first();
+        if ( !WpPassword::check($request->password, $user->user_pass) ) {
+            return response([ 'msg' => 'Invalid password'],400);
+        }
+        $accessToken = $user->createToken('authToken')->plainTextToken;
+        return response(['user' => $user, 'access_token' => $accessToken]);
+    }
+
+    public function logout(Request $request){
+        $request->user()->currentAccessToken()->delete();
+        return response(['msg' => 'Logout Success']);
+    }
+
+    public function update(Request $request)
+    {
+        try{
+            $validatedData = $request->validate([
+                'user_nicename' => 'max:200',
+            ]);
+        }
+        catch(\Exception $e){
+            return response([ 'msg' => $e->getMessage()],400);
+        }
+        $user = $request->user();
+        
+        if($validatedData['user_password'])
+            $validatedData['user_password'] = WpPassword::make($validatedData['user_password']);
+        $user = $user->update($validatedData);
+        return response([ 'user' => $user]);
+    }
+    public function uploadProfilePhoto(Request $request)
+    {
+        try{
+            $max_file_size = '10000000';
+            $validatedData = $request->validate([
+                'photo' => 'require|max:'.$max_file_size,
+            ]);
+        }
+        catch(\Exception $e){
+            return response([ 'msg' => 'File size must < '.$max_file_size.'kb'],400);
+        }
+        // $request->photo->saveAs();
+        $user = $request->user();
+        
+        // $user = $user->update($validatedData);
+        return response([ 'user' => $user]);
+    }
+
+
+}
