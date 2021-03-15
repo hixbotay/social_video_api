@@ -15,6 +15,7 @@ use Illuminate\Support\Facades\Route;
 */
 
 Route::post('/login', 'App\Http\Controllers\API\WordpressAuthController@login');
+Route::post('/login/social', 'App\Http\Controllers\API\WordpressAuthController@loginSocial');
 Route::post('/register', 'App\Http\Controllers\API\WordpressAuthController@register');
 Route::middleware(['auth:sanctum'])->group(function(){
     Route::get('/user','App\Http\Controllers\API\WordpressAuthController@getCurrentUser');

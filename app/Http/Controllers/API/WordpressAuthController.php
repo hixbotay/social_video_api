@@ -6,6 +6,8 @@ use App\Models\User;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\Storage;
 use MikeMcLin\WpPassword\Facades\WpPassword;
+use Socialite;
+
 class WordPressAuthController extends Controller
 {
     public function getCurrentuser(Request $request){
@@ -18,16 +20,14 @@ class WordPressAuthController extends Controller
 
     public function register(Request $request)
     {
-        try{
-            $validatedData = $request->validate([
-                'user_nicename' => 'required|max:200',
-                'user_email' => 'email|required|unique:wp_users',
-                'user_password' => 'required',
-                'user_login' => 'required|unique:wp_users'
-            ]);
-        }
-        catch(\Exception $e){
-            return response([ 'msg' => $e->getMessage()],400);
+        $validatedData = $request->validate([
+            'user_nicename' => 'required|max:200',
+            'user_email' => 'email|required|unique:wp_users',
+            'user_password' => 'required',
+            'user_login' => 'required|unique:wp_users'
+        ]);
+        if($validatedData->errors()){
+            return response($validatedData,400);
         }
        $validatedData['display_name'] = $validatedData['user_nicename'];
        $validatedData['user_registered'] = Carbon::now()->toDateTimeString();
@@ -45,15 +45,61 @@ class WordPressAuthController extends Controller
         ]);
         $user = User::where('user_email', $request->email)->first();
         if ( !WpPassword::check($request->password, $user->user_pass) ) {
-            return response([ 'msg' => 'Invalid password'],400);
+            return response([ 'message' => 'Invalid password'],400);
         }
         $accessToken = $user->createToken('authToken')->plainTextToken;
         return response(['user' => $user, 'access_token' => $accessToken]);
     }
+	/* redirect to facebook to get token
+	public function facebookRedirect()
+    {
+        return Socialite::driver('facebook')->redirect();
+    }
+	*/
+	
+	public function loginSocial(Request $request)
+    {
+		try{
+            $validatedData = $request->validate([
+                'type' => 'required|max:200',
+                'token' => 'required'
+            ]);
+        }
+        catch(\Exception $e){
+            return response([ 'message' => $e->getMessage()],400);
+        }
+        try {    
+            $userSocial = Socialite::driver($validatedData['type'])->userFromToken($validatedData['token']);
+            //$isUser = User::where('fb_id', $user->id)->first();
+			if(empty($userSocial->email)){
+				return response([ 'message' => 'Please public email on profile '.$validatedData['type']],400);
+			}
+			$user = User::where('user_email', $user->email)->first();
+			
+            if(!$user->ID){
+                $user = User::create([
+                    'display_name' => $userSocial->name,
+					'user_nicename' => $userSocial->name,
+                    'email' => $userSocial->email,
+                    //'fb_id' => $userSocial->id,
+                    'password' => WpPassword::make($validatedData['user_password'])
+                ]);
+    
+            }
+    
+        } catch (Exception $exception) {
+            return response([ 'message' => $exception->getMessage()],400);
+        }
+		
+		$accessToken = $user->createToken('authToken')->plainTextToken;
+        return response(['user' => $user, 'access_token' => $accessToken]);
+    }
+	
+	
 
     public function logout(Request $request){
         $request->user()->currentAccessToken()->delete();
-        return response(['msg' => 'Logout Success']);
+        return response(['message' => 'Logout Success']);
     }
 
     public function update(Request $request)
@@ -64,7 +110,7 @@ class WordPressAuthController extends Controller
             ]);
         }
         catch(\Exception $e){
-            return response([ 'msg' => $e->getMessage()],400);
+            return response([ 'message' => $e->getMessage()],400);
         }
         $user = $request->user();
         
@@ -82,7 +128,7 @@ class WordPressAuthController extends Controller
             ]);
         }
         catch(\Exception $e){
-            return response([ 'msg' => 'File size must < '.$max_file_size.'kb'],400);
+            return response([ 'message' => 'File size must < '.$max_file_size.'kb'],400);
         }
         // $request->photo->saveAs();
         $user = $request->user();

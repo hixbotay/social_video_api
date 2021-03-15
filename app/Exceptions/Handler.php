@@ -42,12 +42,12 @@ class Handler extends ExceptionHandler
     {
         return response()->json(['message' => $exception->getMessage()], 401);
     }
-    protected function notfound($request, $exception){
-        return response()->json(['message' => $exception->getMessage()], 404);
-    }
-
+	
     public function render($request, $e)
     {
+        if(config('app.debug')){
+            return parent::render($request,$e);
+        }
         return response()->json(['message' => $e->getMessage()], 404);
     }
 }
