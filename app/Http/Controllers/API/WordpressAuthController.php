@@ -3,10 +3,12 @@ namespace App\Http\Controllers\API;
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use App\Models\User;
+use App\Models\UserMeta;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\Storage;
 use MikeMcLin\WpPassword\Facades\WpPassword;
 use Socialite;
+use Illuminate\Support\Facades\DB;
 
 class WordPressAuthController extends Controller
 {
@@ -29,10 +31,19 @@ class WordPressAuthController extends Controller
         if($validatedData->errors()){
             return response($validatedData,400);
         }
-       $validatedData['display_name'] = $validatedData['user_nicename'];
-       $validatedData['user_registered'] = Carbon::now()->toDateTimeString();
+		$validatedData['display_name'] = $validatedData['user_nicename'];
+		$validatedData['user_registered'] = Carbon::now()->toDateTimeString();
         $validatedData['user_password'] = WpPassword::make($validatedData['user_password']);
-        $user = User::create($validatedData);
+        $user = DB::transaction(function () use ($validatedData) {
+            $user = User::create($validatedData);
+ 
+            UserMeta::create([
+                'user_id' => $user->ID,
+                'is_verified' => false,
+                'photo_path' => ''
+            ]);
+            return $user;
+        }, 5);
         $accessToken = $user->createToken('authToken')->plainTextToken;
         return response([ 'user' => $user, 'access_token' => $accessToken]);
     }
@@ -81,9 +92,14 @@ class WordPressAuthController extends Controller
                     'display_name' => $userSocial->name,
 					'user_nicename' => $userSocial->name,
                     'email' => $userSocial->email,
-                    //'fb_id' => $userSocial->id,
                     'password' => WpPassword::make($validatedData['user_password'])
                 ]);
+                $meta = UserMeta::create([
+                    'user_id' => $user->ID,
+                    'fb_id' => $userSocial->id,
+                ]);
+
+                
     
             }
     

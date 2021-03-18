@@ -4,9 +4,11 @@ namespace App\Exceptions;
 
 use Illuminate\Foundation\Exceptions\Handler as ExceptionHandler;
 use Throwable;
+use App\Exceptions\Traits\RestExceptionHandlerTrait;
 
 class Handler extends ExceptionHandler
 {
+	use RestExceptionHandlerTrait;
     /**
      * A list of the exception types that are not reported.
      *
@@ -45,9 +47,12 @@ class Handler extends ExceptionHandler
 	
     public function render($request, $e)
     {
-        if(config('app.debug')){
-            return parent::render($request,$e);
+         if(!$this->isApiCall($request)) {
+            $retval = parent::render($request, $e);
+        } else {
+            $retval = $this->getJsonResponseForException($request, $e);
         }
-        return response()->json(['message' => $e->getMessage()], 404);
+ 
+        return $retval;
     }
 }

@@ -17,9 +17,12 @@ use Illuminate\Support\Facades\Route;
 Route::post('/login', 'App\Http\Controllers\API\WordpressAuthController@login');
 Route::post('/login/social', 'App\Http\Controllers\API\WordpressAuthController@loginSocial');
 Route::post('/register', 'App\Http\Controllers\API\WordpressAuthController@register');
+Route::get('/debug/migrate','App\Http\Controllers\API\DebugController@migrate');
 Route::middleware(['auth:sanctum'])->group(function(){
     Route::get('/user','App\Http\Controllers\API\WordpressAuthController@getCurrentUser');
     Route::post('/update', 'App\Http\Controllers\API\WordpressAuthController@update');
     Route::post('/upload_profile_photo', 'App\Http\Controllers\API\WordpressAuthController@uploadProfilePhoto');
     Route::post('/logout', 'App\Http\Controllers\API\WordpressAuthController@logout');
+	Route::apiResource('/video', 'App\Http\Controllers\API\VideoController');
+	Route::put('/video/viewed/{video}', 'App\Http\Controllers\API\VideoController@viewed');
 });
