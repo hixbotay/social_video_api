@@ -6,6 +6,7 @@ use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 // use Laravel\Fortify\TwoFactorAuthenticatable;
 use Laravel\Sanctum\HasApiTokens;
+use Illuminate\Support\Facades\Storage;
 
 class User extends Authenticatable
 {
@@ -34,7 +35,10 @@ class User extends Authenticatable
     protected $hidden = [
         'user_pass',
         'user_status',
-        // 'remember_token',
+        'user_activation_key',
+        'user_url',
+        'user_nicename',
+        'meta'
         // 'two_factor_recovery_codes',
         // 'two_factor_secret',
     ];
@@ -52,7 +56,29 @@ class User extends Authenticatable
      * @var array
      */
     protected $appends = [
-        // 'profile_photo_url',
+        'photo_path','number_friend','number_follow','number_follow_me','birthday'
     ];
+
+    public function meta()
+    {
+        return $this->belongsTo(UserMeta::class,'ID','user_id');
+    }
+
+    public function getPhotoPathAttribute(){
+        return Storage::url($this->meta->photo_path);
+    }
+
+    public function getNumberFriendAttribute(){
+        return $this->meta->number_friend;
+    }
+    public function getNumberFollowAttribute(){
+        return $this->meta->number_follow;
+    }
+    public function getNumberFollowMeAttribute(){
+        return $this->meta->number_follow_me;
+    }
+    public function getBirthdayAttribute(){
+        return $this->meta->birthday;
+    }
  
 }

@@ -20,6 +20,7 @@ Route::post('/register', 'App\Http\Controllers\API\WordpressAuthController@regis
 Route::get('/debug/migrate','App\Http\Controllers\API\DebugController@migrate');
 Route::middleware(['auth:sanctum'])->group(function(){
     Route::get('/user','App\Http\Controllers\API\WordpressAuthController@getCurrentUser');
+    Route::get('/user/{user}','App\Http\Controllers\API\WordpressAuthController@show');
     Route::post('/update', 'App\Http\Controllers\API\WordpressAuthController@update');
     Route::post('/upload_profile_photo', 'App\Http\Controllers\API\WordpressAuthController@uploadProfilePhoto');
     Route::post('/logout', 'App\Http\Controllers\API\WordpressAuthController@logout');
