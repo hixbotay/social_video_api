@@ -7,7 +7,8 @@ use App\Http\Resources\VideoResource;
 use App\Models\Video;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
- 
+use App\Http\Enums\VideoStatusEnum;
+
 class VideoController extends Controller
 {
     /**
@@ -15,13 +16,32 @@ class VideoController extends Controller
      *
      * @return \Illuminate\Http\Response
      */
-    public function index()
+    public function index(Request $request)
+    {
+        //
+        $videos = VideoResource::collection(Video::with('user')->where('user_id', '=', $request->user()->ID)->latest()->paginate(5));
+ 
+        return response(['data'=>$videos]);
+    } 
+	
+	//get video on comunity tab
+	public function getNewFeedTab(Request $request)
+    {
+        //
+        $videos = VideoResource::collection(Video::with('user')->newFeedTab($request->user())->latest()->paginate(5));
+ 
+        return response(['data'=>$videos]);
+    }
+	//get video on TV tab
+	public function getNewFeedTv(Request $request)
     {
         //
         $videos = VideoResource::collection(Video::with('user')->latest()->paginate(5));
  
         return response(['data'=>$videos]);
     }
+	
+	
  
     /**
      * Store a newly created resource in storage.
@@ -35,7 +55,7 @@ class VideoController extends Controller
             'title' => 'required',
             'description' => 'required',
             'path' => 'required|mimes:mp4|max:100000',
-			'status' => 'required',
+			'status' => 'required|in:' . implode(',', VideoStatusEnum::getAllValue())
             ]);
         $user = $request->user();
         $path = Storage::disk()->put($user->ID, $request->path);
@@ -57,7 +77,8 @@ class VideoController extends Controller
     public function show(Video $video)
     {
         //
-        return response(['data'=>$video]);
+		$result = new VideoResource($video);
+        return response(['data'=>$result]);
     }
  
     /**

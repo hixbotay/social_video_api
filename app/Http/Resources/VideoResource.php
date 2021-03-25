@@ -24,6 +24,9 @@ class VideoResource extends JsonResource
 			'status' => $this->status,
 			'thumbnail_path' => $this->thumbnail_path,
 			'view' => $this->view,
+			'number_comment' => 10,
+			'number_like' => 10,
+			'comment' => [],
 			'created_at' => $this->created_at,
 			
         ];

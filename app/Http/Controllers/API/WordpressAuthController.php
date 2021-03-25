@@ -42,6 +42,7 @@ class WordPressAuthController extends Controller
                 'photo_path' => '',
                 'verify_photo' => '',
                 'fb_id' => '',
+                'birthday' => '',
             ]);
             return $user;
         }, 5);
@@ -83,9 +84,9 @@ class WordPressAuthController extends Controller
 			if(empty($userSocial->email)){
 				return response([ 'message' => 'Please public email on profile '.$validatedData['type']],400);
 			}
-			$user = User::where('user_email', $user->email)->first();
+			$user = User::where('user_email', $userSocial->email)->first();
 			
-            if(!$user->ID){
+            if(!$user){
 				$user = DB::transaction(function () use ($validatedData) {
 					$user = User::create([
 						'display_name' => $userSocial->name,
