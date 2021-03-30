@@ -5,6 +5,7 @@ namespace App\Http\Controllers\API;
 use App\Http\Controllers\Controller;
 use App\Http\Resources\VideoResource;
 use App\Models\Video;
+use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
 use App\Http\Enums\VideoStatusEnum;
@@ -23,12 +24,21 @@ class VideoController extends Controller
  
         return response(['data'=>$videos]);
     } 
+
+    //get video from friend
+    public function getFriendVideo(User $user)
+    {
+        //
+        $videos = VideoResource::collection(Video::with('user')->where('user_id', '=', $user->ID)->isActive()->latest()->paginate(5));
+ 
+        return response(['data'=>$videos]);
+    } 
 	
 	//get video on comunity tab
 	public function getNewFeedTab(Request $request)
     {
         //
-        $videos = VideoResource::collection(Video::with('user')->newFeedTab($request->user())->latest()->paginate(5));
+        $videos = VideoResource::collection(Video::with('user')->newFeedTab($request->user())->latest()->paginate(5)->items());
  
         return response(['data'=>$videos]);
     }
@@ -36,6 +46,7 @@ class VideoController extends Controller
 	public function getNewFeedTv(Request $request)
     {
         //
+        die;
         $videos = VideoResource::collection(Video::with('user')->latest()->paginate(5));
  
         return response(['data'=>$videos]);

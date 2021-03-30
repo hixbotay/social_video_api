@@ -17,7 +17,8 @@ class WordPressAuthController extends Controller
         return response([ 'user' => $user]);
     }
 
-    public function show(User $user){
+    public function show(Request $request, User $user){ 
+        $user = $user->getFriendRelation($request->user());
         return response([ 'user' => $user]);
     }
 
@@ -57,7 +58,7 @@ class WordPressAuthController extends Controller
             'password' => 'required'
         ]);
         $user = User::where('user_email', $request->email)->first();
-        if ( !WpPassword::check($request->password, $user->user_pass) ) {
+        if (!$user || !WpPassword::check($request->password, $user->user_pass) ) {
             return response([ 'message' => 'Invalid password'],400);
         }
         $accessToken = $user->createToken('authToken')->plainTextToken;
@@ -80,6 +81,7 @@ class WordPressAuthController extends Controller
 		]);
         try {    
             $userSocial = Socialite::driver($validatedData['type'])->userFromToken($validatedData['token']);
+			
             //$isUser = User::where('fb_id', $user->id)->first();
 			if(empty($userSocial->email)){
 				return response([ 'message' => 'Please public email on profile '.$validatedData['type']],400);
@@ -87,7 +89,7 @@ class WordPressAuthController extends Controller
 			$user = User::where('user_email', $userSocial->email)->first();
 			
             if(!$user){
-				$user = DB::transaction(function () use ($validatedData) {
+				$user = DB::transaction(function () use ($validatedData,$userSocial) {
 					$user = User::create([
 						'display_name' => $userSocial->name,
 						'user_nicename' => $userSocial->name,
@@ -99,9 +101,9 @@ class WordPressAuthController extends Controller
 					UserMeta::create([
 						'user_id' => $user->ID,
 						'is_verify' => 0,
-						'photo_path' => '',
+						'photo_path' => $userSocial->avatar ? $this->storeProfilePhoto($user, file_get_contents($userSocial->avatar)) : '',
 						'verify_photo' => '',
-						'fb_id' => '',
+						'fb_id' => $validatedData['type'] == 'facebook' ? $userSocial->id : '',
 					]);
 					return $user;
 				}, 5);           
@@ -151,17 +153,26 @@ class WordPressAuthController extends Controller
     public function uploadProfilePhoto(Request $request)
     {
         $request->validate([
-			'photo_path' => 'required|max:'.config('filesystems.max_size'),
+			'photo_path' => 'required|mimes:jpg,jpeg,png|max:'.config('filesystems.max_size'),
         ]);
         $user = $request->user();
-        $path = Storage::disk()->put($user->ID.'/profile-photo', $request->photo_path);
-        $meta = UserMeta::find($user->ID);
-        if($meta->photo_path && Storage::disk()->exists($meta->photo_path))
-            Storage::disk()->delete($meta->photo_path);
-        $meta->photo_path = $path;
-        $meta->save();
+		DB::transaction(function () use ($user,$request) {
+			$path = $this->storeProfilePhoto($user, $request->photo_path);
+			$meta = UserMeta::firstOrCreate(['user_id' => $user->ID]);
+			if($meta->photo_path && Storage::disk()->exists($meta->photo_path))
+				Storage::disk()->delete($meta->photo_path);
+			$meta->photo_path = $path;
+			$meta->save();
+		}, 5);
         return response([ 'user' => $user]);
     }
+	
+	private function storeProfilePhoto($user, $file){
+		if(Storage::disk()->exists($user->ID.'/profile-photo'))
+			Storage::disk()->delete($user->ID.'/profile-photo');
+		$path = Storage::disk()->put($user->ID.'/profile-photo', $file);
+		return $path;
+	}
 
 
 }

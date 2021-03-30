@@ -18,8 +18,9 @@ Route::post('/login', 'App\Http\Controllers\API\WordpressAuthController@login');
 Route::post('/login/social', 'App\Http\Controllers\API\WordpressAuthController@loginSocial');
 Route::post('/register', 'App\Http\Controllers\API\WordpressAuthController@register');
 Route::get('/debug/migrate','App\Http\Controllers\API\DebugController@migrate');
-Route::get('/user/{user}','App\Http\Controllers\API\WordpressAuthController@show');
+// Route::get('/user/{user}','App\Http\Controllers\API\WordpressAuthController@show');
 Route::middleware(['auth:sanctum'])->group(function(){
+	Route::get('/user/{user}','App\Http\Controllers\API\WordpressAuthController@show');
     Route::get('/user','App\Http\Controllers\API\WordpressAuthController@getCurrentUser');    
     Route::post('/update', 'App\Http\Controllers\API\WordpressAuthController@update');
     Route::post('/upload_profile_photo', 'App\Http\Controllers\API\WordpressAuthController@uploadProfilePhoto');
@@ -29,9 +30,11 @@ Route::middleware(['auth:sanctum'])->group(function(){
 	Route::get('/video/community/detail/{video}', 'App\Http\Controllers\API\VideoController@show');
 	Route::get('/newfeed/tv/{page}', 'App\Http\Controllers\API\VideoController@getNewFeedTv');
 	Route::put('/video/viewed/{video}', 'App\Http\Controllers\API\VideoController@viewed');
+	Route::get('/friend/video/{user}', 'App\Http\Controllers\API\VideoController@getFriendVideo');
 	Route::get('/search', 'App\Http\Controllers\API\SearchController@search');
 	Route::get('/friend/list/{page}', 'App\Http\Controllers\API\FriendController@index');
 	Route::post('/friendrequest', 'App\Http\Controllers\API\FriendRequestController@store'); 
 	Route::get('/friend/request/list', 'App\Http\Controllers\API\FriendRequestController@index'); 
 	Route::post('/friend/accept', 'App\Http\Controllers\API\FriendRequestController@accept'); 
+	Route::post('/friend/decline', 'App\Http\Controllers\API\FriendRequestController@decline'); 
 });

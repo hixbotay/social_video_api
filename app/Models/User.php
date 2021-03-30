@@ -55,7 +55,7 @@ class User extends Authenticatable
      * @var array
      */
     protected $appends = [
-        'photo_path','number_friend','number_follow','number_follow_me','birthday'
+        'photo_path','number_friend','number_follow','number_follow_me','birthday','is_verify'
     ];
 
     public function meta()
@@ -71,9 +71,23 @@ class User extends Authenticatable
     }
 
 	public function scopeFriendWith($query, $user){
-        return $query->join('api_friend_relations as r', 'wp_users.ID', '=', 'r.to_user_id')
-		->where('r.from_user_id',$user->ID)
+
+        return $query->join('api_friend_relations as r', 'wp_users.ID', '=', 'r.from_user_id')
+		->where('r.to_user_id',$user->ID)
 		->where('r.is_friend',true);
+    }
+	public function getFriendRelation($to){
+        $user = $this;
+        $relation = User::leftJoin('api_friend_relations as r', 'wp_users.ID', '=', 'r.from_user_id')
+		->where('r.from_user_id',$user->ID)
+		->where('r.to_user_id',$to->ID)
+        ->where('r.is_friend',true)
+        ->select(['r.is_friend','r.is_follow'])
+        ->first();
+        $user->is_friend = $relation? $relation->is_friend : false;
+        $user->is_follow = $relation? $relation->is_follow : false;
+        return $user;
+        
     }
 
 	public function scopeFollowUser($query, $user){
@@ -97,7 +111,13 @@ class User extends Authenticatable
 		$this->meta = UserMeta::where('user_id', $this->ID)
               ->update(['number_follow_me' => FriendRelation::where('to_user_id',$this->ID)->where('is_follow',true)->count()]);
 		return $this;
-	}
+    }
+    
+    // public function is_friend($user){
+    //     return $query->leftjoin('api_friend_relations as r', 'wp_users.ID', '=', 'r.from_user_id')
+	// 	->where('r.to_user_id',$user->ID)
+	// 	->where('r.is_follow',true);
+    // }
 
     public function getPhotoPathAttribute(){
         return $this->getMetaKey('photo_path') ? Storage::url($this->getMetaKey('photo_path')) : $this->getDefaultPhoto();
@@ -114,6 +134,9 @@ class User extends Authenticatable
     }
     public function getBirthdayAttribute(){
         return $this->getMetaKey('birthday');
+    }
+    public function getisVerifyAttribute(){
+        return $this->getMetaKey('is_verify');
     }
 	private function getMetaKey($attr){
 		if($this->meta){

@@ -24,9 +24,18 @@ class Video extends Model
         return $this->belongsTo(User::class,'user_id','ID');
     }
 	
-	public function newFeedTab($user){
-		$this->isActive();					
-		return $this;
+	public function scopeNewFeedTab($query,$user){
+        $query = $query->isActive()->select(['api_videos.*'])
+        ->leftJoin('api_friend_relations as r', 'api_videos.user_id', '=', 'r.to_user_id')
+        ->where(function($query) use ($user) {
+            $query->orWhere('api_videos.user_id', $user->ID)
+                ->orWhere(function($query) use ($user) {
+                    $query->where('r.from_user_id',$user->ID)
+                        ->where('r.is_follow',true);
+            });
+        });		
+        return $query;
+		
 	}
 	public function scopeIsActive($query){
 		return $query->where('status' ,'=', VideoStatusEnum::PUBLIC['value']);
