@@ -5,10 +5,13 @@ namespace App\Http\Controllers\API;
 use App\Http\Controllers\Controller;
 use App\Http\Resources\VideoResource;
 use App\Models\Video;
+use App\Models\VideoComment;
+use App\Models\VideoLike;
 use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
 use App\Http\Enums\VideoStatusEnum;
+use Illuminate\Support\Facades\DB;
 
 class VideoController extends Controller
 {
@@ -46,8 +49,8 @@ class VideoController extends Controller
 	public function getNewFeedTv(Request $request)
     {
         //
-        die;
-        $videos = VideoResource::collection(Video::with('user')->latest()->paginate(5));
+        
+        $videos = VideoResource::collection(Video::with('user')->isActive()->latest()->paginate(5));
  
         return response(['data'=>$videos]);
     }
@@ -125,12 +128,99 @@ class VideoController extends Controller
      */
     public function destroy(Request $request, Video $video)
     {
-        if($video->user_id != $request->user()->id){
+        if($video->user_id != $request->user()->ID){
             return response()->json(['message' => 'You can only delete your own video.'], 403);
         }
         Storage::delete($video->path);
         $video->delete();
          
         return response(['message'=> 'Video is deleted']);
+    }
+	
+	public function getComment(Video $video)
+    {
+        //
+        $videos = VideoComment::with('user')->where('video_id', '=', $video->id)->get();
+ 
+        return response(['data'=>$videos]);
+    } 
+	
+	public function addComment(Request $request)
+    {
+        $validData = $request->validate([
+			'comment' => 'required|max:500',
+            'video_id' => 'required',
+			'parent_id' => 'exists:api_video_comments,id'
+            ]);
+        $user = $request->user();
+		$validData['user_id'] = $user->ID;
+		$comment = DB::transaction(function () use ($validData, $user) {
+			
+            $result = VideoComment::create($validData);
+			
+			Video::find($validData['video_id'])->updateCommentCount();
+            return $result;
+        }, 5);
+        
+        return response(['data'=>$comment, 'message'=> 'Add comment success']);
+    }
+	
+	public function deleteComment(Request $request, VideoComment $comment)
+    {
+		
+        if($comment->user_id != $request->user()->ID){
+            return response()->json(['message' => 'You can only delete your own comment.'], 403);
+        }
+       		
+		DB::transaction(function () use ($comment) {
+			
+			$video_id = $comment->video_id;
+            $comment->delete();
+			Video::find($video_id)->updateCommentCount();
+        }, 5);
+         
+        return response(['message'=> 'Comment is deleted']);
+    }
+	
+	public function getLike(Video $video)
+    {
+        //
+        $data = VideoLike::with('user')->where('video_id', '=', $video->id)->get();
+ 
+        return response(['data'=>$data]);
+    } 
+	
+	public function addLike(Request $request)
+    {
+        $validData = $request->validate([
+            'video_id' => 'required|exists:api_videos,id'
+            ]);
+        $user = $request->user();
+		$validData['user_id'] = $user->ID;
+		if(VideoLike::where('video_id',$validData['video_id'])->where('user_id',$user->ID)->count()){
+			return response(['message'=> 'Liked']);
+		}
+		$likeCount = DB::transaction(function () use ($validData, $user) {
+			
+            $result = VideoLike::create($validData);
+			
+			$count = Video::find($validData['video_id'])->updateLikeCount();
+            return $count;
+        }, 5);
+        
+        return response(['data'=>$likeCount, 'message'=> 'Liked']);
+    }
+	
+	public function unLike(Request $request, Video $video)
+    {
+		$user = $request->user();
+		DB::transaction(function () use ($video,$user) {
+			
+			VideoLike::where('video_id',$video->id)->where('user_id',$user->ID)->delete();
+            
+			Video::find($video->id)->updateLikeCount();
+        }, 5);
+         
+        return response(['message'=> 'Unliked']);
     }
 }

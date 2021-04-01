@@ -5,6 +5,8 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use App\Http\Enums\VideoStatusEnum;
+use App\Models\VideoComment;
+use App\Models\VideoLike;
 
 class Video extends Model
 {
@@ -17,7 +19,7 @@ class Video extends Model
     ];
  
     protected $fillable = [
-	'user_id','title','description', 'path','thumbnail_path','status','view'
+	'user_id','title','description', 'path','thumbnail_path','status','view','number_like','number_comment'
     ];
  
     public function user(){
@@ -46,4 +48,14 @@ class Video extends Model
 				->orWhere('description','like',"%{$key}%");
             })->isActive()->orderBy('title');
     }
+	
+	public function updateCommentCount(){
+		return $this->update(['number_comment' => VideoComment::where('video_id',$this->id)->count() ]);
+	}
+	
+	public function updateLikeCount(){
+		$count = VideoLike::where('video_id',$this->id)->count();
+		 $this->update(['number_like' =>  $count]);
+		 return $count;
+	}
 }
