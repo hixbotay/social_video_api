@@ -16,6 +16,12 @@ class ApiMiddleware
      */
     public function handle(Request $request, Closure $next)
     {
+		if($request->route('page')){
+			$request->merge([
+				'page' => $request->route('page'),
+			]);
+		}
+		
         $request->headers->add(['Accept' => 'application/json']);
         return $next($request);
     }
