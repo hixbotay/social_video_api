@@ -38,9 +38,12 @@ class FriendRequestController extends Controller
                 'from_user_id' => $request->user()->ID,
                 'to_user_id' => $request->input('to_user_id')
             ]);
-        }
+			return response(['message'=>'Send request success']);
+        }else{
+			return response(['message'=>'Invalid request'],400);
+		}
 		#@todo notify
-		return response(['message'=>'Send request success']);
+		
     }
 
     /**
@@ -97,13 +100,71 @@ class FriendRequestController extends Controller
 
 
     /**
-     * Remove the specified resource from storage.
-     *
-     * @param  \App\Models\FriendRequest  $friendRequest
-     * @return \Illuminate\Http\Response
+     * Cancel friend request
      */
-    public function destroy(FriendRequest $friendRequest)
+    public function cancel(Request $request)
     {
-        //
+        $validatedData = $request->validate([ 
+            'to_user_id' => 'required|exists:api_friend_requests',
+            ]);
+		$user = $request->user();
+		FriendRequest::where('from_user_id',$user->ID)
+            ->where('to_user_id',$validatedData['to_user_id'])->delete(); 
+
+		return response(['message'=>'Cancel request success']);
+    }
+	
+	public function follow(Request $request)
+    {
+       $validatedData = $request->validate([ 
+            'user_id' => 'required|exists:wp_users,ID',
+            ]);
+        $user = $request->user();
+        
+		DB::transaction(function () use ($validatedData, $user) {
+             
+            $friend_relation = FriendRelation::firstOrCreate([
+                'from_user_id' => $user->ID,
+                'to_user_id' => $validatedData['user_id'],
+                
+            ]);
+			if(!$friend_relation->is_follow){
+				$friend_relation->is_follow = true;
+				$friend_relation->save();
+			}
+			
+			User::find($validatedData['user_id'])->updateFollowMe();
+			$user->updateFollowMe();
+            return $user;
+        }, 5);
+
+		return response(['message'=>'Follow request success']);
+    }
+	
+	public function unFollow(Request $request)
+    {
+       $validatedData = $request->validate([ 
+            'user_id' => 'required|exists:wp_users,ID',
+            ]);
+        $user = $request->user();
+        
+		DB::transaction(function () use ($validatedData, $user) {
+             
+            $friend_relation = FriendRelation::firstOrCreate([
+                'from_user_id' => $user->ID,
+                'to_user_id' => $validatedData['user_id']
+            ]);
+			
+			if($friend_relation->is_follow){
+				$friend_relation->is_follow = false;
+				$friend_relation->save();
+			}
+			
+			User::find($validatedData['user_id'])->updateFollowMe();
+			$user->updateFollowMe();
+            return $user;
+        }, 5);
+
+		return response(['message'=>'Unfollow request success']);
     }
 }

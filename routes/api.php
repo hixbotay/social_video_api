@@ -20,7 +20,7 @@ Route::post('/register', 'App\Http\Controllers\API\WordpressAuthController@regis
 Route::get('/debug/migrate','App\Http\Controllers\API\DebugController@migrate');
 // Route::get('/user/{user}','App\Http\Controllers\API\WordpressAuthController@show');
 Route::middleware(['auth:sanctum'])->group(function(){
-	Route::get('/user/{user}','App\Http\Controllers\API\WordpressAuthController@show');
+	Route::get('/user/{user_id}','App\Http\Controllers\API\WordpressAuthController@show');
     Route::get('/user','App\Http\Controllers\API\WordpressAuthController@getCurrentUser');    
     Route::post('/update', 'App\Http\Controllers\API\WordpressAuthController@update');
     Route::post('/upload_profile_photo', 'App\Http\Controllers\API\WordpressAuthController@uploadProfilePhoto');
@@ -32,11 +32,17 @@ Route::middleware(['auth:sanctum'])->group(function(){
 	Route::put('/video/seen/{video}', 'App\Http\Controllers\API\VideoController@viewed');
 	Route::get('/friend/video/{user}', 'App\Http\Controllers\API\VideoController@getFriendVideo');
 	Route::get('/search', 'App\Http\Controllers\API\SearchController@search');
-	Route::get('/friend/list/{page}', 'App\Http\Controllers\API\FriendController@index');
+	Route::get('/friend/list/{user}', 'App\Http\Controllers\API\FriendController@index');
 	Route::post('/friendrequest', 'App\Http\Controllers\API\FriendRequestController@store'); 
 	Route::get('/friend/request/list', 'App\Http\Controllers\API\FriendRequestController@index'); 
 	Route::post('/friend/accept', 'App\Http\Controllers\API\FriendRequestController@accept'); 
-	Route::post('/friend/decline', 'App\Http\Controllers\API\FriendRequestController@decline'); 
+	Route::post('/friend/decline', 'App\Http\Controllers\API\FriendRequestController@decline');
+	Route::post('/friend/cancel', 'App\Http\Controllers\API\FriendRequestController@cancel');
+	Route::get('/friend/follow/{user}', 'App\Http\Controllers\API\FriendController@followingUser');	
+	Route::get('/friend/who_follow_me/{user}', 'App\Http\Controllers\API\FriendController@whoFollowMe');	
+	Route::post('/friend/follow', 'App\Http\Controllers\API\FriendRequestController@follow');	
+	Route::delete('/friend/delete/{user}', 'App\Http\Controllers\API\FriendController@destroy');
+	Route::delete('/friend/unfollow', 'App\Http\Controllers\API\FriendRequestController@unFollow');	
 	Route::get('/video/comment/{video}', 'App\Http\Controllers\API\VideoController@getComment'); 
 	Route::post('/video/comment', 'App\Http\Controllers\API\VideoController@addComment'); 
 	Route::delete('/video/comment/{comment}', 'App\Http\Controllers\API\VideoController@deleteComment'); 

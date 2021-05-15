@@ -14,9 +14,16 @@ class SearchController extends Controller
     public function search(Request $request){
 		$request->validate([
             'key' => 'required',
+			'friend' =>'boolean'
             ]);
 		
         $key = $request->query('key');
-        return response(['users'=>User::search($key)->paginate(5)->items(),'videos' => VideoResource::collection( Video::search($key)->paginate(5)->items() )]); 
+        $type = $request->query('type');
+		
+        return response(
+			[
+			'users' => $type == 'user' || $type == '' ? User::search($key, $request->query('is_friend') ? $request->user()->ID : false)->paginate(5)->items() : [],
+			'videos' => $type == 'video' || $type == '' ? VideoResource::collection( Video::search($key)->paginate(5)->items() ) : []
+			]); 
     }
 }

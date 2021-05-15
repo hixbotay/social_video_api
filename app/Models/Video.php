@@ -35,7 +35,8 @@ class Video extends Model
                     $query->where('r.from_user_id',$user->ID)
                         ->where('r.is_follow',true);
             });
-        });		
+        })
+		->groupBy('id');	
         return $query;
 		
 	}

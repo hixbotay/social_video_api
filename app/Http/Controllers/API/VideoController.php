@@ -46,11 +46,12 @@ class VideoController extends Controller
         return response(['data'=>$videos]);
     }
 	//get video on TV tab
-	public function getNewFeedTv(Request $request)
+	public function getNewFeedTv(Request $request, $page)
     {
         //
+		
         
-        $videos = VideoResource::collection(Video::with('user')->isActive()->latest()->paginate(5));
+        $videos = VideoResource::collection(Video::with('user')->isActive()->latest()->paginate(5)->items());
  
         return response(['data'=>$videos]);
     }
@@ -67,8 +68,8 @@ class VideoController extends Controller
     {
         $validData = $request->validate([
             'title' => 'required',
-            'description' => 'required',
-            'path' => 'required|mimes:mp4|max:100000',
+            //'description' => 'max:1000',
+            'path' => 'required|max:100000',//|mimes:video/x-ms-asf,video/x-flv,video/mp4,application/x-mpegURL,video/MP2T,video/3gpp,video/quicktime,video/x-msvideo,video/x-ms-wmv,video/avi'
 			'status' => 'required|in:' . implode(',', VideoStatusEnum::getAllValue())
             ]);
         $user = $request->user();
@@ -139,8 +140,17 @@ class VideoController extends Controller
 	
 	public function getComment(Video $video)
     {
-        //
-        $videos = VideoComment::with('user')->where('video_id', '=', $video->id)->get();
+		$videos = VideoComment::with('user')->where('video_id', '=', $video->id)->where('parent_id','=',0)->paginate(20)->items();
+		
+		$video_ids = array_map ( function ($a) {
+				return $a['id'];
+			}, $videos );
+		
+		$video_children = (array)VideoComment::with('user')->whereIn('parent_id', $video_ids)->get()->toArray();
+		
+		foreach($videos as &$v){
+			$v['children'] = array_values(array_filter($video_children,function ($a) use ($v) {return $a['parent_id'] == $v['id'];}));
+		}
  
         return response(['data'=>$videos]);
     } 

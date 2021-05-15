@@ -14,11 +14,22 @@ class WordPressAuthController extends Controller
 {
     public function getCurrentuser(Request $request){
         $user = $request->user();
+		
         return response([ 'user' => $user]);
     }
+	
+	
 
-    public function show(Request $request, User $user){ 
+    public function show(Request $request, $user_id){ 
+		$user = User::find($user_id);
+		if(!$user->ID){
+			$user = User::where('user_login', $user_id)->first();
+		}
+		if(!$user->ID){
+			return response([ 'message' => 'Invalid user'],400);
+		}
         $user = $user->getFriendRelation($request->user());
+		
         return response([ 'user' => $user]);
     }
 
@@ -28,7 +39,7 @@ class WordPressAuthController extends Controller
             'user_nicename' => 'required|max:200',
             'user_email' => 'email|required|unique:wp_users',
             'user_password' => 'required',
-            'user_login' => 'required|unique:wp_users'
+            'user_login' => 'required|unique:wp_users|regex:/^[a-zA-Z0-9\.\-]+$/u|max:255|unique:wp_users,id'
         ]);
         
 		$validatedData['display_name'] = $validatedData['user_nicename'];
@@ -94,7 +105,7 @@ class WordPressAuthController extends Controller
 						'display_name' => $userSocial->name,
 						'user_nicename' => $userSocial->name,
 						'user_email' => $userSocial->email,
-						'user_login' => $userSocial->email,
+						'user_login' => explode('@',$userSocial->email)[0].'.'.int(time()),//@TODO lay phan truoc cua email
 						'user_pass' => WpPassword::make('Koph4iem1324')
 					]);
 		 
