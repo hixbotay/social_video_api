@@ -120,6 +120,7 @@ return [
     */
 
     'key' => env('APP_KEY'),
+    'web_url' => env('WEB_URL'),
 
     'cipher' => 'AES-256-CBC',
 

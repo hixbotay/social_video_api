@@ -5,7 +5,7 @@ namespace App\Http\Resources;
 use Illuminate\Http\Resources\Json\JsonResource;
 use Illuminate\Support\Facades\Storage;
  
-class VideoResource extends JsonResource
+class WordpressVideoResource extends JsonResource
 {
     /**
      * Transform the resource into an array.
@@ -20,16 +20,16 @@ class VideoResource extends JsonResource
             'user' => $this->user,
             'title' => $this->title,
             'description' => $this->description,
-            'path' => Storage::url($this->path),
-			'status' => $this->status,
+            'path' => $this->path,
+			//'status' => $this->status,
 			'thumbnail_path' => $this->thumbnail_path,
 			'view' => $this->view,
 			'number_comment' => $this->number_comment,
 			'number_like' => $this->number_like,
 			'comment' => [],
 			'created_at' => $this->created_at,
-			'is_liked' => $this->is_liked ? true : false,
-			'share_url' => config('app.web_url').'share-video/?video_id='.$this->id
+			'share_url' => config('app.web_url').'share-video/?type=tv&video_id='.$this->id,
+			'web_url' => config('app.web_url').'?p='.$this->id
 			
         ];
     }

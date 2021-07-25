@@ -4,7 +4,9 @@ namespace App\Http\Controllers\API;
  
 use App\Http\Controllers\Controller;
 use App\Http\Resources\VideoResource;
+use App\Http\Resources\WordpressVideoResource;
 use App\Models\Video;
+use App\Models\WordpressPost;
 use App\Models\VideoComment;
 use App\Models\VideoLike;
 use App\Models\User;
@@ -40,17 +42,19 @@ class VideoController extends Controller
 	//get video on comunity tab
 	public function getNewFeedTab(Request $request)
     {
+		//$videos = VideoResource::collection(Video::with('user')->newFeedTab()->paginate(5)->items());
+		
         //
-        $videos = VideoResource::collection(Video::with('user')->newFeedTab($request->user())->latest()->paginate(5)->items());
- 
+        $videos = VideoResource::collection(Video::with('user')->newFeedTab($request->user())->latest()->paginate(5)->items()); 
         return response(['data'=>$videos]);
     }
 	//get video on TV tab
 	public function getNewFeedTv(Request $request, $page)
     {
         //
+		$videos = WordpressPost::getVideo();
+        return response(['data'=>WordpressVideoResource::collection($videos)]);
 		
-        
         $videos = VideoResource::collection(Video::with('user')->isActive()->latest()->paginate(5)->items());
  
         return response(['data'=>$videos]);
@@ -68,7 +72,7 @@ class VideoController extends Controller
     {
         $validData = $request->validate([
             'title' => 'required',
-            //'description' => 'max:1000',
+            'description' => 'max:1000',
             'path' => 'required|max:100000',//|mimes:video/x-ms-asf,video/x-flv,video/mp4,application/x-mpegURL,video/MP2T,video/3gpp,video/quicktime,video/x-msvideo,video/x-ms-wmv,video/avi'
 			'status' => 'required|in:' . implode(',', VideoStatusEnum::getAllValue())
             ]);
@@ -78,6 +82,7 @@ class VideoController extends Controller
         $validData['path'] = $path;
         $validData['thumbnail_path'] = '';
         $validData['view'] = 0;
+		//$validData['description'] = $request->description;
         $result = new VideoResource(Video::create($validData));
         return response(['data'=>$result, 'message'=> 'Video is created']);
     }
@@ -107,7 +112,8 @@ class VideoController extends Controller
     {
         $request->validate([
             'title' => 'required',
-            'description' => 'required',
+            'description' => 'required|max:1000',
+			'status' => 'required|in:' . implode(',', VideoStatusEnum::getAllValue())
         ]);
  
         $video->update($request->all());

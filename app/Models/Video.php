@@ -7,6 +7,7 @@ use Illuminate\Database\Eloquent\Model;
 use App\Http\Enums\VideoStatusEnum;
 use App\Models\VideoComment;
 use App\Models\VideoLike;
+use Illuminate\Support\Facades\DB;
 
 class Video extends Model
 {
@@ -27,16 +28,21 @@ class Video extends Model
     }
 	
 	public function scopeNewFeedTab($query,$user){
-        $query = $query->isActive()->select(['api_videos.*'])
-        ->leftJoin('api_friend_relations as r', 'api_videos.user_id', '=', 'r.to_user_id')
-        ->where(function($query) use ($user) {
+        $query = $query->isActive()->select('api_videos.*','liked.id as is_liked')
+        //->leftJoin('api_friend_relations as r', 'api_videos.user_id', '=', 'r.to_user_id')
+        ->leftJoin('api_video_likes as liked', function ($join) use ($user){
+			$join->on('api_videos.id', '=', 'liked.video_id');
+			$join->on('liked.user_id', '=', DB::raw($user->ID));            
+		})
+        /*->where(function($query) use ($user) {
             $query->orWhere('api_videos.user_id', $user->ID)
                 ->orWhere(function($query) use ($user) {
                     $query->where('r.from_user_id',$user->ID)
                         ->where('r.is_follow',true);
             });
-        })
+        })*/
 		->groupBy('id');	
+		
         return $query;
 		
 	}

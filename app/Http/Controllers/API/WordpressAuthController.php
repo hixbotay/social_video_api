@@ -105,7 +105,7 @@ class WordPressAuthController extends Controller
 						'display_name' => $userSocial->name,
 						'user_nicename' => $userSocial->name,
 						'user_email' => $userSocial->email,
-						'user_login' => explode('@',$userSocial->email)[0].'.'.int(time()),//@TODO lay phan truoc cua email
+						'user_login' => explode('@',$userSocial->email)[0].'_'.(int)time(),//@TODO lay phan truoc cua email
 						'user_pass' => WpPassword::make('Koph4iem1324')
 					]);
 		 
