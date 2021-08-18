@@ -44,24 +44,24 @@ class FriendController extends Controller
     {
         $currentUser = $request->user();
         try{
-			DB::transaction(function () use ($user, $currentUser) {
-				 
-				$friend_relation = FriendRelation::where([
-					'from_user_id' => $user->ID,
-					'to_user_id' => $currentUser->ID
-				])->delete();
-				$friend_relation = FriendRelation::where([
-					'from_user_id' => $currentUser->ID,
-					'to_user_id' => $user->ID
-				])->delete();
-				
-				$user->updateFollowMe();
-				$currentUser->updateFollowMe();
-				
-			}, 5);
-		}catch(Exception $e){
-			
-		}
+        DB::transaction(function () use ($user, $currentUser) {
+          
+          $friend_relation = FriendRelation::where([
+            'from_user_id' => $user->ID,
+            'to_user_id' => $currentUser->ID
+          ])->delete();
+          $friend_relation = FriendRelation::where([
+            'from_user_id' => $currentUser->ID,
+            'to_user_id' => $user->ID
+          ])->delete();
+          
+          $user->updateFollowMe();
+          $currentUser->updateFollowMe();
+          
+        }, 5);
+      }catch(\Exception $e){
+          
+      }
 
 		return response(['message'=>'Delete friend success']);
     }

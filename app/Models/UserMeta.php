@@ -14,7 +14,7 @@ class UserMeta extends Model
     protected $primaryKey = 'user_id';
  
     protected $fillable = [
-        'user_id', 'photo_path', 'is_verify', 'verify_photo', 'fb_id', 'number_friend', 'birthday','number_follow', 'number_follow_me'
+        'user_id', 'photo_path', 'is_verify', 'verify_photo', 'fb_id', 'number_friend', 'birthday','number_follow', 'number_follow_me', 'device_token'
     ];
  
     public function user()

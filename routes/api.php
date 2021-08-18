@@ -21,16 +21,12 @@ Route::get('/debug/migrate','App\Http\Controllers\API\DebugController@migrate');
 // Route::get('/user/{user}','App\Http\Controllers\API\WordpressAuthController@show');
 Route::middleware(['auth:sanctum'])->group(function(){
 	Route::get('/user/{user_id}','App\Http\Controllers\API\WordpressAuthController@show');
-    Route::get('/user','App\Http\Controllers\API\WordpressAuthController@getCurrentUser');    
+    Route::get('/user','App\Http\Controllers\API\WordpressAuthController@getCurrentUser');
+    Route::get('/upload_verify_photo','App\Http\Controllers\API\WordpressAuthController@uploadVerifyPhoto');
+
     Route::post('/update', 'App\Http\Controllers\API\WordpressAuthController@update');
     Route::post('/upload_profile_photo', 'App\Http\Controllers\API\WordpressAuthController@uploadProfilePhoto');
     Route::post('/logout', 'App\Http\Controllers\API\WordpressAuthController@logout');
-	Route::apiResource('/video', 'App\Http\Controllers\API\VideoController');
-	Route::get('/newfeed/community/{page}', 'App\Http\Controllers\API\VideoController@getNewFeedTab');
-	Route::get('/video/community/detail/{video}', 'App\Http\Controllers\API\VideoController@show');
-	Route::get('/newfeed/tv/{page}', 'App\Http\Controllers\API\VideoController@getNewFeedTv');
-	Route::put('/video/seen/{video}', 'App\Http\Controllers\API\VideoController@viewed');
-	Route::get('/friend/video/{user}', 'App\Http\Controllers\API\VideoController@getFriendVideo');
 	Route::get('/search', 'App\Http\Controllers\API\SearchController@search');
 	Route::get('/friend/list/{user}', 'App\Http\Controllers\API\FriendController@index');
 	Route::post('/friendrequest', 'App\Http\Controllers\API\FriendRequestController@store'); 
@@ -43,10 +39,33 @@ Route::middleware(['auth:sanctum'])->group(function(){
 	Route::post('/friend/follow', 'App\Http\Controllers\API\FriendRequestController@follow');	
 	Route::delete('/friend/delete/{user}', 'App\Http\Controllers\API\FriendController@destroy');
 	Route::delete('/friend/unfollow', 'App\Http\Controllers\API\FriendRequestController@unFollow');	
+
+	Route::apiResource('/video', 'App\Http\Controllers\API\VideoController');
+	Route::get('/newfeed/community/{page}', 'App\Http\Controllers\API\VideoController@getNewFeedTab');
+	Route::get('/video/community/detail/{video}', 'App\Http\Controllers\API\VideoController@show');
+	Route::put('/video/seen/{video}', 'App\Http\Controllers\API\VideoController@viewed');
+	Route::get('/friend/video/{user}', 'App\Http\Controllers\API\VideoController@getFriendVideo');
 	Route::get('/video/comment/{video}', 'App\Http\Controllers\API\VideoController@getComment'); 
 	Route::post('/video/comment', 'App\Http\Controllers\API\VideoController@addComment'); 
 	Route::delete('/video/comment/{comment}', 'App\Http\Controllers\API\VideoController@deleteComment'); 
 	Route::get('/video/like/{video}', 'App\Http\Controllers\API\VideoController@getLike'); 
 	Route::post('/video/like', 'App\Http\Controllers\API\VideoController@addLike'); 
-	Route::delete('/video/like/{video}', 'App\Http\Controllers\API\VideoController@unLike'); 
+	Route::delete('/video/like/{video}', 'App\Http\Controllers\API\VideoController@unLike');
+		
+	Route::get('/newfeed/tv/{page}', 'App\Http\Controllers\API\VideoTvController@getNewFeedTv');
+	Route::get('/video/tv/detail/{video}', 'App\Http\Controllers\API\VideoTvController@show');
+	Route::get('/friend/tv/video/{user}', 'App\Http\Controllers\API\VideoTvController@getFriendVideo');
+	Route::put('/video/tv/seen/{video}', 'App\Http\Controllers\API\VideoTvController@viewed');
+	Route::post('/video/tv/comment', 'App\Http\Controllers\API\VideoTvController@addComment'); 
+	Route::get('/video/tv/comment/{video}', 'App\Http\Controllers\API\VideoTvController@getComment'); 
+	Route::delete('/video/tv/comment/{comment}', 'App\Http\Controllers\API\VideoTvController@deleteComment'); 
+	Route::get('/video/tv/like/{video}', 'App\Http\Controllers\API\VideoTvController@getLike'); 
+	Route::post('/video/tv/like', 'App\Http\Controllers\API\VideoTvController@addLike'); 
+	Route::delete('/video/tv/like/{video}', 'App\Http\Controllers\API\VideoTvController@unLike'); 
+
+	Route::get('/notify/list', 'App\Http\Controllers\API\NotifyController@index');
+	Route::put('/notify/read_markup_all', 'App\Http\Controllers\API\NotifyController@markAllRead');
+	Route::put('/notify/read_markup/{notify}', 'App\Http\Controllers\API\NotifyController@markRead');
+	Route::delete('/notify/{notify}', 'App\Http\Controllers\API\NotifyController@destroy');
+	Route::get('/notify/detail/{notify}', 'App\Http\Controllers\API\NotifyController@show');
 });

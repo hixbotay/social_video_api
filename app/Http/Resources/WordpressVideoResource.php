@@ -16,10 +16,10 @@ class WordpressVideoResource extends JsonResource
     public function toArray($request)
     {
         return [
-            'id' => $this->id,
+            'id' => $this->ID,
             'user' => $this->user,
-            'title' => $this->title,
-            'description' => $this->description,
+            'title' => $this->post_title,
+            'description' => $this->post_content,
             'path' => $this->path,
 			//'status' => $this->status,
 			'thumbnail_path' => $this->thumbnail_path,
@@ -27,9 +27,9 @@ class WordpressVideoResource extends JsonResource
 			'number_comment' => $this->number_comment,
 			'number_like' => $this->number_like,
 			'comment' => [],
-			'created_at' => $this->created_at,
-			'share_url' => config('app.web_url').'share-video/?type=tv&video_id='.$this->id,
-			'web_url' => config('app.web_url').'?p='.$this->id
+			'created_at' => $this->post_date,
+			'share_url' => config('app.web_url').'share-video/?type=tv&video_id='.$this->ID,
+			'web_url' => config('app.web_url').'?p='.$this->ID
 			
         ];
     }

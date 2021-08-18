@@ -3,9 +3,11 @@
 namespace App\Http\Controllers\API;
 
 use App\Http\Controllers\Controller;
+use App\Http\Enums\NotifyEnum;
 use App\Models\FriendRequest;
 use App\Models\User;
 use App\Models\FriendRelation;
+use App\Models\Notify;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 
@@ -30,6 +32,7 @@ class FriendRequestController extends Controller
      */
     public function store(Request $request)
     {
+        $user = $request->user();
         $request->validate([ 
             'to_user_id' => 'required|exists:wp_users,ID',
             ]);
@@ -38,11 +41,20 @@ class FriendRequestController extends Controller
                 'from_user_id' => $request->user()->ID,
                 'to_user_id' => $request->input('to_user_id')
             ]);
+
+            Notify::addNotify([
+                'content' => [
+                    "msg" => "User {$user->display_name} want to be your friend",
+                    'user_id' => $user->ID
+                ],
+                "user_id" => $request->to_user_id,
+                'type' => NotifyEnum::FRIEND_REQUEST['value']
+            ]);
+            
 			return response(['message'=>'Send request success']);
         }else{
 			return response(['message'=>'Invalid request'],400);
 		}
-		#@todo notify
 		
     }
 
@@ -82,6 +94,14 @@ class FriendRequestController extends Controller
 			User::find($validatedData['from_user_id'])->updateFollowMe();
             return $user;
         }, 5);
+        Notify::addNotify([
+            'content' => [
+                "msg" => "User {$user->display_name} have accepted your friend request",
+                'user_id' => $user->ID
+            ],
+            "user_id" => $validatedData['from_user_id'],
+            'type' => NotifyEnum::ACCEPT_FRIEND['value']
+        ]);
 
 		return response(['message'=>'Accept request success']);
     }
@@ -94,6 +114,15 @@ class FriendRequestController extends Controller
 		$user = $request->user();
 		FriendRequest::where('from_user_id',$validatedData['from_user_id'])
             ->where('to_user_id',$user->ID)->delete(); 
+
+        Notify::addNotify([
+            'content' => [
+                "msg" => "User {$user->display_name} have decline your friend request",
+                'user_id' => $user->ID
+            ],
+            "user_id" => $validatedData['from_user_id'],
+            'type' => NotifyEnum::DECLINE_FRIEND['value']
+        ]);
 
 		return response(['message'=>'Decline request success']);
     }
@@ -138,6 +167,15 @@ class FriendRequestController extends Controller
             return $user;
         }, 5);
 
+        Notify::addNotify([
+            'content' => [
+                "msg" => "User {$user->display_name} have followed you",
+                'user_id' => $user->ID
+            ],
+            "user_id" => $validatedData['user_id'],
+            'type' => NotifyEnum::FOLLOW_ME['value']
+        ]);
+
 		return response(['message'=>'Follow request success']);
     }
 	
@@ -164,6 +202,7 @@ class FriendRequestController extends Controller
 			$user->updateFollowMe();
             return $user;
         }, 5);
+
 
 		return response(['message'=>'Unfollow request success']);
     }

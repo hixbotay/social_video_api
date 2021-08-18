@@ -39,7 +39,7 @@ class WordPressAuthController extends Controller
             'user_nicename' => 'required|max:200',
             'user_email' => 'email|required|unique:wp_users',
             'user_password' => 'required',
-            'user_login' => 'required|unique:wp_users|regex:/^[a-zA-Z0-9\.\-]+$/u|max:255|unique:wp_users,id'
+            'user_login' => 'required|unique:wp_users|regex:/^[a-zA-Z0-9\.\-]+$/u|max:255|unique:wp_users,id',
         ]);
         
 		$validatedData['display_name'] = $validatedData['user_nicename'];
@@ -59,20 +59,24 @@ class WordPressAuthController extends Controller
             return $user;
         }, 5);
         $accessToken = $user->createToken('authToken')->plainTextToken;
+        if($request->device_token)  $user->setDeviceToken($request->device_token);
         return response([ 'user' => $user, 'access_token' => $accessToken]);
     }
 
     public function login(Request $request)
     {
-        $loginData = $request->validate([
+        $request->validate([
             'email' => 'email|required',
-            'password' => 'required'
+            'password' => 'required',
+            'device_token' => 'required'
         ]);
         $user = User::where('user_email', $request->email)->first();
         if (!$user || !WpPassword::check($request->password, $user->user_pass) ) {
             return response([ 'message' => 'Invalid password'],400);
         }
         $accessToken = $user->createToken('authToken')->plainTextToken;
+        $user->setDeviceToken($request->device_token);
+        // dump($user);die;
         return response(['user' => $user, 'access_token' => $accessToken]);
     }
 	/* redirect to facebook to get token
@@ -88,7 +92,8 @@ class WordPressAuthController extends Controller
     {
 		$validatedData = $request->validate([
 			'type' => 'required|max:200',
-			'token' => 'required'
+			'token' => 'required',
+            'device_token' => 'required'
 		]);
         try {    
             $userSocial = Socialite::driver($validatedData['type'])->userFromToken($validatedData['token']);
@@ -125,6 +130,7 @@ class WordPressAuthController extends Controller
         }
 		
 		$accessToken = $user->createToken('authToken')->plainTextToken;
+        $user->setDeviceToken($request->device_token);
         return response(['user' => $user, 'access_token' => $accessToken]);
     }
 	
@@ -177,10 +183,33 @@ class WordPressAuthController extends Controller
 		}, 5);
         return response([ 'user' => $user]);
     }
+
+    public function uploadVerifyPhoto(Request $request)
+    {
+        $request->validate([
+			'ID_front_face' => 'required|mimes:jpg,jpeg,png|max:'.config('filesystems.max_img_size'),
+			'ID_back_face' => 'required|mimes:jpg,jpeg,png|max:'.config('filesystems.max_img_size'),
+        ]);
+        $user = $request->user();
+		DB::transaction(function () use ($user,$request) {
+			$meta = UserMeta::firstOrCreate(['user_id' => $user->ID]);
+            $meta->verify_photo = json_decode($meta->verify_photo);
+
+			if($meta->verify_photo && Storage::disk()->exists($meta->verify_photo->ID_front_face))
+				Storage::disk()->delete($meta->verify_photo->ID_front_face);
+            if($meta->verify_photo && Storage::disk()->exists($meta->verify_photo->ID_back_face))
+				Storage::disk()->delete($meta->verify_photo->ID_back_face);
+            $meta->verify_photo->ID_front_face = $this->storeProfilePhoto($user, $request->ID_front_face);
+            $meta->verify_photo->ID_back_face = $this->storeProfilePhoto($user, $request->ID_back_face);
+            $meta->verify_photo = json_encode($meta->verify_photo);
+			$meta->save();
+		}, 5);
+        return response([ 'user' => $user]);
+    }
 	
 	private function storeProfilePhoto($user, $file){
-		if(Storage::disk()->exists($user->ID.'/profile-photo'))
-			Storage::disk()->delete($user->ID.'/profile-photo');
+		// if(Storage::disk()->exists($user->ID.'/profile-photo'))
+		// 	Storage::disk()->delete($user->ID.'/profile-photo');
 		$path = Storage::disk()->put($user->ID.'/profile-photo', $file);
 		return $path;
 	}

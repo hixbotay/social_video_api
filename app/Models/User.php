@@ -57,7 +57,7 @@ class User extends Authenticatable
      * @var array
      */
     protected $appends = [
-        'photo_path','number_friend','number_follow','number_follow_me','birthday','is_verify','setting'
+        'photo_path','number_friend','number_follow','number_follow_me','birthday','is_verify','setting','device_token'
     ];
 
     public function meta()
@@ -141,7 +141,8 @@ class User extends Authenticatable
 		->groupBy('wp_users.ID');
 		$query->leftJoin('api_friend_relations as r_w_current', function ($join) use($current_user){
 				$join->on('r_w_current.to_user_id', '=', 'r.from_user_id');
-				$join->on('r_w_current.from_user_id', '=', DB::raw($current_user->ID));
+                if($current_user->ID)
+				    $join->on('r_w_current.from_user_id', '=', DB::raw($current_user->ID));
 			});
 			
 		return $query;
@@ -150,6 +151,19 @@ class User extends Authenticatable
 	public function scopeSelectList($query){
 		return $query->select(['wp_users.ID','wp_users.user_login','wp_users.user_nicename','wp_users.user_email','wp_users.display_name',DB::Raw('IFNULL( r_w_current.is_friend, 0) as is_friend'),DB::Raw('IFNULL( r_w_current.is_follow, 0) as is_follow')]);
 	}
+
+    public function getArrayId(){
+        $this->select(['wp_users.ID']);
+        return array_map(function ($e){return $e->ID;},$this->get()->toArray());
+    }
+
+    public function setDeviceToken($device_token){
+        $meta = UserMeta::where('user_id', $this->ID)
+        ->update([
+        'device_token' => $device_token,
+        ]);
+        return $this;
+    }
 
 	public function updateFollowMe(){
 		if(!$this->meta){
@@ -198,6 +212,9 @@ class User extends Authenticatable
     }
     public function getisVerifyAttribute(){
         return $this->getMetaKey('is_verify');
+    }
+    public function getDeviceTokenAttribute(){
+        return $this->getMetaKey('device_token');
     }
 	
 	public function getSettingAttribute(){

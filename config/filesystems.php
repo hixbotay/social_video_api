@@ -70,6 +70,7 @@ return [
         public_path('storage') => storage_path('app/public'),
     ],
     'max_size'=>'50000',
+    'max_img_size'=>'20000',
     'max_video_size'=>'100000',
 
 ];

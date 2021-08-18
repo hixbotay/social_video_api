@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\API;
  
 use App\Http\Controllers\Controller;
+use App\Http\Enums\NotifyEnum;
 use App\Http\Resources\VideoResource;
 use App\Http\Resources\WordpressVideoResource;
 use App\Models\Video;
@@ -13,6 +14,7 @@ use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
 use App\Http\Enums\VideoStatusEnum;
+use App\Models\Notify;
 use Illuminate\Support\Facades\DB;
 
 class VideoController extends Controller
@@ -48,18 +50,6 @@ class VideoController extends Controller
         $videos = VideoResource::collection(Video::with('user')->newFeedTab($request->user())->latest()->paginate(5)->items()); 
         return response(['data'=>$videos]);
     }
-	//get video on TV tab
-	public function getNewFeedTv(Request $request, $page)
-    {
-        //
-		$videos = WordpressPost::getVideo();
-        return response(['data'=>WordpressVideoResource::collection($videos)]);
-		
-        $videos = VideoResource::collection(Video::with('user')->isActive()->latest()->paginate(5)->items());
- 
-        return response(['data'=>$videos]);
-    }
-	
 	
  
     /**
@@ -73,7 +63,7 @@ class VideoController extends Controller
         $validData = $request->validate([
             'title' => 'required',
             'description' => 'max:1000',
-            'path' => 'required|max:100000',//|mimes:video/x-ms-asf,video/x-flv,video/mp4,application/x-mpegURL,video/MP2T,video/3gpp,video/quicktime,video/x-msvideo,video/x-ms-wmv,video/avi'
+            'path' => 'required|max:100000|mimes:video/x-ms-asf,video/x-flv,video/mp4,application/x-mpegURL,video/MP2T,video/3gpp,video/quicktime,video/x-msvideo,video/x-ms-wmv,video/avi',
 			'status' => 'required|in:' . implode(',', VideoStatusEnum::getAllValue())
             ]);
         $user = $request->user();
@@ -84,6 +74,15 @@ class VideoController extends Controller
         $validData['view'] = 0;
 		//$validData['description'] = $request->description;
         $result = new VideoResource(Video::create($validData));
+        Notify::addNotify([
+            'content' => [
+                "msg" => "{$user->display_name} upload new video",
+                'video_id' => $result->id,
+                'user_id' => $user->ID
+            ],
+            "user_id" => User::whoFollowMe($user)->pluck('ID')->all(),
+            'type' => NotifyEnum::NEW_VIDEO['value']
+        ]);
         return response(['data'=>$result, 'message'=> 'Video is created']);
     }
  
@@ -177,6 +176,16 @@ class VideoController extends Controller
 			Video::find($validData['video_id'])->updateCommentCount();
             return $result;
         }, 5);
+
+        Notify::addNotify([
+            'content' => [
+                "msg" => "{$user->display_name} comment to your video",
+                'video_id' => $request->video_id,
+                'comment_id' => $comment->id
+            ],
+            "user_id" => Video::find($validData['video_id'])->user_id,
+            'type' => NotifyEnum::COMMENT_VIDEO['value']
+        ]);
         
         return response(['data'=>$comment, 'message'=> 'Add comment success']);
     }
@@ -223,6 +232,16 @@ class VideoController extends Controller
 			$count = Video::find($validData['video_id'])->updateLikeCount();
             return $count;
         }, 5);
+
+        Notify::addNotify([
+            'content' => [
+                "msg" => "{$user->display_name} upload new video",
+                'video_id' => $request->video_id,
+                'user_id' => $user->ID
+            ],
+            "user_id" => Video::find($validData['video_id'])->user_id,
+            'type' => NotifyEnum::LIKE_VIDEO['value']
+        ]);
         
         return response(['data'=>$likeCount, 'message'=> 'Liked']);
     }
