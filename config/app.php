@@ -121,7 +121,8 @@ return [
 
     'key' => env('APP_KEY'),
     'web_url' => env('WEB_URL'),
-    'firebase_key' => env('FIREBASE_KEY'),
+    'firebase_key' => env('FIREBASE_KEY_ANDROID'),
+    'firebase_key_ios' => env('FIREBASE_KEY_IOS'),
 
     'cipher' => 'AES-256-CBC',
 

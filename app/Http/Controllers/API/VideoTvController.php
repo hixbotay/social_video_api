@@ -98,7 +98,7 @@ class VideoTvController extends Controller
                 'comment_content' => $request->comment,
                 'user_id' => $user->ID,
                 'comment_post_ID' =>  $request->video_id,
-                'comment_parent' => $request->parent_id,
+                'comment_parent' => (int)$request->parent_id,
                 'comment_date' => Carbon::now(),
                 'comment_date_gmt' => Carbon::now()
             ]);
@@ -117,6 +117,24 @@ class VideoTvController extends Controller
         ]);
         
         return response(['data'=> (new CommentResource($comment)), 'message'=> 'Add comment success']);
+    }
+
+    public function updateComment(Request $request, WordpressComment $comment)
+    {
+		
+        if($comment->user_id != $request->user()->ID){
+            return response()->json(['message' => 'You can only update your own comment.'], 403);
+        }
+        $request->validate([
+			'comment' => 'required|max:500'
+            ]);
+ 
+        $comment->update([
+			'comment_content' => $request->comment,
+            'comment_date' => Carbon::now(),
+            'comment_date_gmt' => Carbon::now()
+        ]);
+        return response(['data'=>$comment, 'message'=> 'update comment success']);
     }
 	
 	public function deleteComment(Request $request, WordpressComment $comment)

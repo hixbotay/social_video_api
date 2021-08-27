@@ -17,11 +17,19 @@ class ApiMiddleware
      */
     public function handle(Request $request, Closure $next)
     {
+        //do thanh nien Linh ko hieu nen de page bat dau tu 1
 		if($request->route('page')){
-			$request->merge([
-				'page' => $request->route('page'),
-			]);
+            $page = $request->route('page');			
 		}
+        if($request->page){
+            $page = $request->page;
+        }
+        if(isset($page)){
+            $request->merge([
+                'page' => max((int)$page-1,0)
+            ]);
+        }
+        
 		
         $request->headers->add(['Accept' => 'application/json']);
         return $next($request);

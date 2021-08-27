@@ -8,6 +8,7 @@ use Illuminate\Database\Eloquent\Model;
 use App\Http\Enums\VideoStatusEnum;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\File;
 
 class Notify extends Model
 {
@@ -97,8 +98,13 @@ class Notify extends Model
 
         // Execute post
         $result = curl_exec($ch);
+		
+		File::append(
+				public_path('/logs/notify.txt'),
+				'[' . date('Y-m-d H:i:s') . ']' . PHP_EOL .'request '.$encodedData. PHP_EOL.'Result '.$result
+			);
 
-        Log::debug('app.notification', ['Send notify: ' . curl_error($ch).' '.$result]);
+        
         curl_close($ch);
         
         return true;

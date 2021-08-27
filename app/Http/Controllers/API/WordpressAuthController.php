@@ -9,6 +9,7 @@ use Illuminate\Support\Facades\Storage;
 use MikeMcLin\WpPassword\Facades\WpPassword;
 use Illuminate\Support\Facades\DB;
 use Laravel\Socialite\Facades\Socialite;
+use stdClass;
 
 class WordPressAuthController extends Controller
 {
@@ -62,20 +63,32 @@ class WordPressAuthController extends Controller
         if($request->device_token)  $user->setDeviceToken($request->device_token);
         return response([ 'user' => $user, 'access_token' => $accessToken]);
     }
+	
+	public function storeNotifyToken(Request $request)
+    {
+        $request->validate([
+            'device_token' => 'required',
+            'os' => 'required',
+            'device_id' => 'required'
+        ]);
+        $user = $request->user();
+        $user->setDeviceToken($request->device_token);
+        // dump($user);die;
+        return response(['user' => $user, 'msg' => 'Success']);
+    }
 
     public function login(Request $request)
     {
         $request->validate([
             'email' => 'email|required',
             'password' => 'required',
-            'device_token' => 'required'
         ]);
         $user = User::where('user_email', $request->email)->first();
         if (!$user || !WpPassword::check($request->password, $user->user_pass) ) {
             return response([ 'message' => 'Invalid password'],400);
         }
         $accessToken = $user->createToken('authToken')->plainTextToken;
-        $user->setDeviceToken($request->device_token);
+        
         // dump($user);die;
         return response(['user' => $user, 'access_token' => $accessToken]);
     }
@@ -93,7 +106,6 @@ class WordPressAuthController extends Controller
 		$validatedData = $request->validate([
 			'type' => 'required|max:200',
 			'token' => 'required',
-            'device_token' => 'required'
 		]);
         try {    
             $userSocial = Socialite::driver($validatedData['type'])->userFromToken($validatedData['token']);
@@ -130,7 +142,6 @@ class WordPressAuthController extends Controller
         }
 		
 		$accessToken = $user->createToken('authToken')->plainTextToken;
-        $user->setDeviceToken($request->device_token);
         return response(['user' => $user, 'access_token' => $accessToken]);
     }
 	
@@ -170,7 +181,7 @@ class WordPressAuthController extends Controller
     public function uploadProfilePhoto(Request $request)
     {
         $request->validate([
-			'photo_path' => 'required|mimes:jpg,jpeg,png|max:'.config('filesystems.max_size'),
+			'photo_path' => 'required|max:'.config('filesystems.max_size'),
         ]);
         $user = $request->user();
 		DB::transaction(function () use ($user,$request) {
@@ -199,6 +210,9 @@ class WordPressAuthController extends Controller
 				Storage::disk()->delete($meta->verify_photo->ID_front_face);
             if($meta->verify_photo && Storage::disk()->exists($meta->verify_photo->ID_back_face))
 				Storage::disk()->delete($meta->verify_photo->ID_back_face);
+            if(!$meta->verify_photo){
+                $meta->verify_photo = new stdClass();
+            }
             $meta->verify_photo->ID_front_face = $this->storeProfilePhoto($user, $request->ID_front_face);
             $meta->verify_photo->ID_back_face = $this->storeProfilePhoto($user, $request->ID_back_face);
             $meta->verify_photo = json_encode($meta->verify_photo);

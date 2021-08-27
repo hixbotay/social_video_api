@@ -50,7 +50,7 @@ class VideoController extends Controller
         $videos = VideoResource::collection(Video::with('user')->newFeedTab($request->user())->latest()->paginate(5)->items()); 
         return response(['data'=>$videos]);
     }
-	
+
  
     /**
      * Store a newly created resource in storage.
@@ -137,10 +137,18 @@ class VideoController extends Controller
         if($video->user_id != $request->user()->ID){
             return response()->json(['message' => 'You can only delete your own video.'], 403);
         }
-        Storage::delete($video->path);
-        $video->delete();
-         
-        return response(['message'=> 'Video is deleted']);
+        if($this->deleteVideo($video)){
+            return response(['message'=> 'Video is deleted']); 
+        }
+        return response()->json(['message' => 'Delete error'], 405);
+        
+    }
+
+    private function deleteVideo($video){
+        if(Storage::delete($video->path)){
+            return $video->delete();
+        }
+        return false;
     }
 	
 	public function getComment(Video $video)
@@ -187,6 +195,20 @@ class VideoController extends Controller
             'type' => NotifyEnum::COMMENT_VIDEO['value']
         ]);
         
+        return response(['data'=>$comment, 'message'=> 'Add comment success']);
+    }
+
+    public function updateComment(Request $request, VideoComment $comment)
+    {
+		
+        if($comment->user_id != $request->user()->ID){
+            return response()->json(['message' => 'You can only delete your own comment.'], 403);
+        }
+        $request->validate([
+			'comment' => 'required|max:500'
+            ]);
+ 
+        $comment->update($request->all());
         return response(['data'=>$comment, 'message'=> 'Add comment success']);
     }
 	
@@ -257,5 +279,17 @@ class VideoController extends Controller
         }, 5);
          
         return response(['message'=> 'Unliked']);
+    }
+
+    public function adminGetVideo(Request $request){
+        $videos = VideoResource::collection(Video::with('user')->latest()->paginate(20)->items()); 
+        return response(['data'=>$videos]);
+    }
+
+    public function adminDeleteVideo(Video $video){
+        if($this->deleteVideo($video)){
+            return response(['message'=> 'Video is deleted']); 
+        }
+        return response()->json(['message' => 'Delete error'], 405);
     }
 }

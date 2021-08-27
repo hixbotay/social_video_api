@@ -22,9 +22,10 @@ Route::get('/debug/migrate','App\Http\Controllers\API\DebugController@migrate');
 Route::middleware(['auth:sanctum'])->group(function(){
 	Route::get('/user/{user_id}','App\Http\Controllers\API\WordpressAuthController@show');
     Route::get('/user','App\Http\Controllers\API\WordpressAuthController@getCurrentUser');
-    Route::get('/upload_verify_photo','App\Http\Controllers\API\WordpressAuthController@uploadVerifyPhoto');
+    Route::post('/upload_verify_photo','App\Http\Controllers\API\WordpressAuthController@uploadVerifyPhoto');
 
     Route::post('/update', 'App\Http\Controllers\API\WordpressAuthController@update');
+    Route::post('/store_device_token', 'App\Http\Controllers\API\WordpressAuthController@storeNotifyToken');
     Route::post('/upload_profile_photo', 'App\Http\Controllers\API\WordpressAuthController@uploadProfilePhoto');
     Route::post('/logout', 'App\Http\Controllers\API\WordpressAuthController@logout');
 	Route::get('/search', 'App\Http\Controllers\API\SearchController@search');
@@ -47,6 +48,7 @@ Route::middleware(['auth:sanctum'])->group(function(){
 	Route::get('/friend/video/{user}', 'App\Http\Controllers\API\VideoController@getFriendVideo');
 	Route::get('/video/comment/{video}', 'App\Http\Controllers\API\VideoController@getComment'); 
 	Route::post('/video/comment', 'App\Http\Controllers\API\VideoController@addComment'); 
+	Route::put('/video/comment/{comment}', 'App\Http\Controllers\API\VideoController@updateComment'); 
 	Route::delete('/video/comment/{comment}', 'App\Http\Controllers\API\VideoController@deleteComment'); 
 	Route::get('/video/like/{video}', 'App\Http\Controllers\API\VideoController@getLike'); 
 	Route::post('/video/like', 'App\Http\Controllers\API\VideoController@addLike'); 
@@ -57,6 +59,7 @@ Route::middleware(['auth:sanctum'])->group(function(){
 	Route::get('/friend/tv/video/{user}', 'App\Http\Controllers\API\VideoTvController@getFriendVideo');
 	Route::put('/video/tv/seen/{video}', 'App\Http\Controllers\API\VideoTvController@viewed');
 	Route::post('/video/tv/comment', 'App\Http\Controllers\API\VideoTvController@addComment'); 
+	Route::put('/video/tv/comment/{comment}', 'App\Http\Controllers\API\VideoTvController@updateComment'); 
 	Route::get('/video/tv/comment/{video}', 'App\Http\Controllers\API\VideoTvController@getComment'); 
 	Route::delete('/video/tv/comment/{comment}', 'App\Http\Controllers\API\VideoTvController@deleteComment'); 
 	Route::get('/video/tv/like/{video}', 'App\Http\Controllers\API\VideoTvController@getLike'); 
@@ -68,4 +71,18 @@ Route::middleware(['auth:sanctum'])->group(function(){
 	Route::put('/notify/read_markup/{notify}', 'App\Http\Controllers\API\NotifyController@markRead');
 	Route::delete('/notify/{notify}', 'App\Http\Controllers\API\NotifyController@destroy');
 	Route::get('/notify/detail/{notify}', 'App\Http\Controllers\API\NotifyController@show');
+
+	Route::get('/favorite/list', 'App\Http\Controllers\API\FavoriteController@index');
+	Route::get('/favorite/detail/{favorite}', 'App\Http\Controllers\API\FavoriteController@show');
+	Route::post('/favorite', 'App\Http\Controllers\API\FavoriteController@store');
+	Route::put('/favorite/{favorite}', 'App\Http\Controllers\API\FavoriteController@update');
+	Route::post('/favorite/video/{favorite}', 'App\Http\Controllers\API\FavoriteController@addVideo');
+	Route::delete('/favorite/{favorite}', 'App\Http\Controllers\API\FavoriteController@destroy');
+	Route::delete('/favorite/video/{favorite}', 'App\Http\Controllers\API\FavoriteController@deleteVideo');
+});
+
+Route::middleware(['admin'])->group(function(){
+	Route::get('/admin/video', 'App\Http\Controllers\API\VideoController@adminGetVideo');
+	Route::put('/admin/video/{video}', 'App\Http\Controllers\API\VideoController@update');
+	Route::delete('/admin/video/{video}', 'App\Http\Controllers\API\VideoController@adminDeleteVideo');
 });

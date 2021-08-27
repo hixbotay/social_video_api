@@ -51,20 +51,21 @@ class User extends Authenticatable
     protected $casts = [
         
     ];
+
+    public $wpMeta;
     /**
      * The accessors to append to the model's array form.
      *
      * @var array
      */
     protected $appends = [
-        'photo_path','number_friend','number_follow','number_follow_me','birthday','is_verify','setting','device_token'
+        'photo_path','number_friend','number_follow','number_follow_me','birthday','is_verify','setting','device_token','is_waiting_verify'
     ];
 
     public function meta()
     {
         return $this->belongsTo(UserMeta::class,'ID','user_id');
     }
-	
 	public static function search($key, $is_friend_with = false){
 		
 		$query = self::where(function($query) use ($key){
@@ -157,7 +158,7 @@ class User extends Authenticatable
         return array_map(function ($e){return $e->ID;},$this->get()->toArray());
     }
 
-    public function setDeviceToken($device_token){
+    public function setDeviceToken($device_token,$os='android',$device_id=''){
         $meta = UserMeta::where('user_id', $this->ID)
         ->update([
         'device_token' => $device_token,
@@ -211,16 +212,30 @@ class User extends Authenticatable
         return $this->getMetaKey('birthday');
     }
     public function getisVerifyAttribute(){
-        return $this->getMetaKey('is_verify');
+        return $this->getWpMetaKey('is_verify') =='on';
     }
     public function getDeviceTokenAttribute(){
         return $this->getMetaKey('device_token');
     }
+    public function getIsWaitingVerifyAttribute(){
+        $data = json_decode($this->getMetaKey('verify_photo'));
+        if($data && $data->ID_front_face && $data->ID_back_face && $this->is_verify == 0){
+            return 1;
+        }
+        return 0;
+    }
 	
 	public function getSettingAttribute(){
+        $role = $this->getWpMetaKey('wp_capabilities');
+        $can_upload = false;
+        if($role){
+            $role = unserialize($role);
+            $can_upload = (isset($role['administrator']) && $role['administrator']) || (isset($role['editor']) && $role['editor']);
+        }
         return [
 			'max_photo_size' => config('filesystems.max_size'),
-			'max_video_size' => config('filesystems.max_video_size')
+			'max_video_size' => config('filesystems.max_video_size'),
+            'can_upload' => $can_upload
 		];
     }
 	
@@ -228,6 +243,18 @@ class User extends Authenticatable
 		if($this->meta){
 			return $this->meta->$attr;
 		}
+		return '';
+	}
+
+    public function getWpMetaKey($attr){
+		if(!$this->wpMeta){
+            $this->wpMeta = UserWordpressMeta::where('user_id',$this->ID)->get()->toArray();
+		}
+		foreach($this->wpMeta as $meta){
+            if($meta['meta_key'] == $attr){
+                return $meta['meta_value'];
+            }
+        }
 		return '';
 	}
 	
